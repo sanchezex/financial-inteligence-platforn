@@ -1,0 +1,201 @@
+
+.advanced-chart {
+  background: #0f1419;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #233038;
+}
+
+.advanced-chart.loading {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-loading {
+  text-align: center;
+  color: #8b98a5;
+}
+
+.chart-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #233038;
+  border-top-color: #1d9bf0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.symbol-info h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.current-price {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 4px 0;
+}
+
+.price-change {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.price-change.positive {
+  color: #22c55e;
+}
+
+.price-change.negative {
+  color: #ef4444;
+}
+
+.indicator-toggles {
+  display: flex;
+  gap: 8px;
+}
+
+.indicator-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #233038;
+  background: transparent;
+  color: #8b98a5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.indicator-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.indicator-btn.active {
+  background: #1d9bf0;
+  border-color: #1d9bf0;
+  color: #ffffff;
+}
+
+.chart-container {
+  margin: 16px 0;
+}
+
+.main-chart {
+  width: 100%;
+  height: 120px;
+}
+
+.indicators-summary {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.indicator-card {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.indicator-label {
+  font-size: 11px;
+  color: #8b98a5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.indicator-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.indicator-value.overbought {
+  color: #ef4444;
+}
+
+.indicator-value.oversold {
+  color: #22c55e;
+}
+
+.indicator-value.positive {
+  color: #22c55e;
+}
+
+.indicator-value.negative {
+  color: #ef4444;
+}
+
+.period-selector {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #233038;
+}
+
+.period-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #8b98a5;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.period-btn.active {
+  background: #1d9bf0;
+  color: #ffffff;
+}
+
+@media (max-width: 600px) {
+  .chart-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .indicator-toggles {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .indicators-summary {
+    gap: 10px;
+  }
+
+  .indicator-card {
+    padding: 8px 10px;
+  }
+}
+
