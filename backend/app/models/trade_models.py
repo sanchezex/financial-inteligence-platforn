@@ -86,6 +86,8 @@ class User(Base):
     """
     __tablename__ = "users"
     
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
     # Paper trading settings
     paper_trading_enabled = Column(Boolean, default=False)
     paper_account_balance = Column(DECIMAL(20, 2), default=100000.00)
@@ -489,8 +491,7 @@ class PaperTradingAccount(Base):
 # Note: Order.strategy relationship requires Strategy model to be loaded first
 # This is handled at the bottom of the file to avoid circular imports
 
-# Import Strategy here to avoid circular import
-from app.models.trade_models import Strategy
+# Import Strategy here to avoid circular import - Note: Strategy is already defined above
 
 # Add the missing relationship after Strategy is defined
 Order.strategy = relationship("Strategy", back_populates="orders")

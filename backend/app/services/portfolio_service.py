@@ -11,6 +11,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.logging import get_logger
+from app.models.trade_models import (
+    Position,
+    PortfolioHistory,
+    Trade,
+    PaperTradingAccount,
+    Order,
+)
 
 logger = get_logger(__name__)
 
