@@ -111,13 +111,7 @@ class MarketAPIService:
                     quote['type'] = 'tick'
                     yield quote
             await asyncio.sleep(5)  # Poll interval
-        '''Realtime tick stream - yields dicts for ClickHouse insert'''
-        # Polygon WebSocket for stocks/commodities  
-        # NSE streaming only via polling (no WS providers for NSE)
-            async for message in self._polygon_stream(symbols):
-                yield message
-                
-        # NSE-only polling above - no other streams
+
     
     # DISABLED non-NSE streams
     async def _polygon_stream(self, symbols): raise NotImplementedError("NSE only")
