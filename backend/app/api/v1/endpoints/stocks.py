@@ -119,49 +119,49 @@ async def get_company_info(symbol: str, db: Session = Depends(get_db)):
         )
     
     # Fallback to mock data if not in database
-    companies = {
-        "AAPL": {
-            "symbol": "AAPL",
-            "name": "Apple Inc.",
-            "exchange": "NASDAQ",
-            "sector": "Technology",
-            "industry": "Consumer Electronics",
-            "country": "United States",
-            "currency": "USD",
-            "market_cap": Decimal("2800000000000"),
-            "description": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
-            "website": "https://www.apple.com"
+nse_companies = {
+        "SCOM": {
+            "symbol": "SCOM",
+            "name": "Safaricom PLC",
+            "exchange": "NSE",
+            "sector": "Telecommunications",
+            "industry": "Mobile Services",
+            "country": "Kenya",
+            "currency": "KES",
+            "market_cap": Decimal("850000000000"),
+            "description": "Safaricom PLC provides mobile, fixed line and financial services in Kenya.",
+            "website": "https://www.safaricom.co.ke"
         },
-        "MSFT": {
-            "symbol": "MSFT",
-            "name": "Microsoft Corporation",
-            "exchange": "NASDAQ",
-            "sector": "Technology",
-            "industry": "Software - Infrastructure",
-            "country": "United States",
-            "currency": "USD",
-            "market_cap": Decimal("2600000000000"),
-            "description": "Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide.",
-            "website": "https://www.microsoft.com"
+        "NBK": {
+            "symbol": "NBK",
+            "name": "NCBA Bank Group PLC",
+            "exchange": "NSE",
+            "sector": "Financial Services",
+            "industry": "Banking",
+            "country": "Kenya",
+            "currency": "KES",
+            "market_cap": Decimal("120000000000"),
+            "description": "NCBA Bank Group PLC provides banking services to corporate, SME and retail customers.",
+            "website": "https://ke.ncbagroup.com"
         },
-        "GOOGL": {
-            "symbol": "GOOGL",
-            "name": "Alphabet Inc.",
-            "exchange": "NASDAQ",
-            "sector": "Technology",
-            "industry": "Internet Content & Information",
-            "country": "United States",
-            "currency": "USD",
-            "market_cap": Decimal("1700000000000"),
-            "description": "Alphabet Inc. provides online advertising services in the United States, Europe, and internationally.",
-            "website": "https://www.abc.xyz"
+        "KCB": {
+            "symbol": "KCB",
+            "name": "KCB Group PLC",
+            "exchange": "NSE",
+            "sector": "Financial Services",
+            "industry": "Banking",
+            "country": "Kenya",
+            "currency": "KES",
+            "market_cap": Decimal("110000000000"),
+            "description": "KCB Group PLC is a financial services organization.",
+            "website": "https://kcbgroup.com"
         }
     }
     
-    company = companies.get(symbol.upper())
+    company = nse_companies.get(symbol.upper())
     
     if not company:
-        raise HTTPException(status_code=404, detail=f"Company not found: {symbol}")
+        raise HTTPException(status_code=404, detail=f"NSE company not found: {symbol}")
     
     return CompanyInfo(**company)
 
@@ -178,43 +178,24 @@ async def get_stock_list(
     Returns stocks filtered by exchange and/or sector.
     """
     # Mock data
-    stocks = [
-        {"symbol": "AAPL", "name": "Apple Inc.", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "MSFT", "name": "Microsoft Corporation", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "GOOGL", "name": "Alphabet Inc.", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "AMZN", "name": "Amazon.com Inc.", "exchange": "NASDAQ", "sector": "Consumer Cyclical"},
-        {"symbol": "META", "name": "Meta Platforms Inc.", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "NVDA", "name": "NVIDIA Corporation", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "TSLA", "name": "Tesla Inc.", "exchange": "NASDAQ", "sector": "Consumer Cyclical"},
-        {"symbol": "BRK.B", "name": "Berkshire Hathaway Inc.", "exchange": "NYSE", "sector": "Financial Services"},
-        {"symbol": "JPM", "name": "JPMorgan Chase & Co.", "exchange": "NYSE", "sector": "Financial Services"},
-        {"symbol": "JNJ", "name": "Johnson & Johnson", "exchange": "NYSE", "sector": "Healthcare"},
-        {"symbol": "V", "name": "Visa Inc.", "exchange": "NYSE", "sector": "Financial Services"},
-        {"symbol": "PG", "name": "Procter & Gamble Co.", "exchange": "NYSE", "sector": "Consumer Defensive"},
-        {"symbol": "UNH", "name": "UnitedHealth Group Inc.", "exchange": "NYSE", "sector": "Healthcare"},
-        {"symbol": "HD", "name": "Home Depot Inc.", "exchange": "NYSE", "sector": "Consumer Cyclical"},
-        {"symbol": "MA", "name": "Mastercard Inc.", "exchange": "NYSE", "sector": "Financial Services"},
-        {"symbol": "DIS", "name": "Walt Disney Co.", "exchange": "NYSE", "sector": "Communication Services"},
-        {"symbol": "PYPL", "name": "PayPal Holdings Inc.", "exchange": "NASDAQ", "sector": "Financial Services"},
-        {"symbol": "ADBE", "name": "Adobe Inc.", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "CRM", "name": "Salesforce Inc.", "exchange": "NYSE", "sector": "Technology"},
-        {"symbol": "NFLX", "name": "Netflix Inc.", "exchange": "NASDAQ", "sector": "Communication Services"},
-        {"symbol": "AMD", "name": "Advanced Micro Devices", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "INTC", "name": "Intel Corporation", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "TMO", "name": "Thermo Fisher Scientific", "exchange": "NYSE", "sector": "Healthcare"},
-        {"symbol": "COST", "name": "Costco Wholesale Corp.", "exchange": "NASDAQ", "sector": "Consumer Defensive"},
-        {"symbol": "ABBV", "name": "AbbVie Inc.", "exchange": "NYSE", "sector": "Healthcare"},
-        {"symbol": "ACN", "name": "Accenture plc", "exchange": "NYSE", "sector": "Technology"},
-        {"symbol": "AVGO", "name": "Broadcom Inc.", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "CSCO", "name": "Cisco Systems Inc.", "exchange": "NASDAQ", "sector": "Technology"},
-        {"symbol": "PEP", "name": "PepsiCo Inc.", "exchange": "NASDAQ", "sector": "Consumer Defensive"},
+    nse_stocks = [
+        {"symbol": "SCOM", "name": "Safaricom PLC", "exchange": "NSE", "sector": "Telecommunications"},
+        {"symbol": "NBK", "name": "NCBA Bank", "exchange": "NSE", "sector": "Banking"},
+        {"symbol": "KCB", "name": "KCB Group", "exchange": "NSE", "sector": "Banking"},
+        {"symbol": "EABL", "name": "East African Breweries", "exchange": "NSE", "sector": "Beverages"},
+        {"symbol": "BAT", "name": "British American Tobacco Kenya", "exchange": "NSE", "sector": "Tobacco"},
+        {"symbol": "ABSA", "name": "ABSA Bank Kenya", "exchange": "NSE", "sector": "Banking"},
+        {"symbol": "GLD", "name": "Gold Trust", "exchange": "NSE", "sector": "ETFs"},
+        {"symbol": "COOP", "name": "Co-operative Bank", "exchange": "NSE", "sector": "Banking"},
+        {"symbol": "EQTY", "name": "Equity Group", "exchange": "NSE", "sector": "Banking"},
+        {"symbol": "KLB", "name": "KCB Bank", "exchange": "NSE", "sector": "Banking"},
     ]
     
     # Apply filters
     if exchange:
-        stocks = [s for s in stocks if s["exchange"].upper() == exchange.upper()]
+        nse_stocks = [s for s in nse_stocks if s["exchange"].upper() == exchange.upper()]
     if sector:
-        stocks = [s for s in stocks if s["sector"].lower() == sector.lower()]
+        nse_stocks = [s for s in nse_stocks if s["sector"].lower() == sector.lower()]
     
     return {
         "stocks": stocks[:limit],
@@ -236,13 +217,8 @@ async def get_stocks_by_exchange(
     
     Supported exchanges: NYSE, NASDAQ, AMEX
     """
-    valid_exchanges = ["NYSE", "NASDAQ", "AMEX"]
-    
-    if exchange.upper() not in valid_exchanges:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid exchange. Supported: {', '.join(valid_exchanges)}"
-        )
+    if exchange.upper() != "NSE":
+        raise HTTPException(status_code=400, detail="NSE Kenya only")
     
     # Extended stock list with more companies per exchange
     stocks_by_exchange = {
@@ -337,83 +313,18 @@ async def search_stocks(
     """
     import random
     
-    # Extended searchable database
-    all_stocks = [
-        # NASDAQ
-        {"symbol": "AAPL", "name": "Apple Inc.", "exchange": "NASDAQ"},
-        {"symbol": "MSFT", "name": "Microsoft Corporation", "exchange": "NASDAQ"},
-        {"symbol": "GOOGL", "name": "Alphabet Inc. Class A", "exchange": "NASDAQ"},
-        {"symbol": "GOOG", "name": "Alphabet Inc. Class C", "exchange": "NASDAQ"},
-        {"symbol": "AMZN", "name": "Amazon.com Inc.", "exchange": "NASDAQ"},
-        {"symbol": "META", "name": "Meta Platforms Inc.", "exchange": "NASDAQ"},
-        {"symbol": "NVDA", "name": "NVIDIA Corporation", "exchange": "NASDAQ"},
-        {"symbol": "TSLA", "name": "Tesla Inc.", "exchange": "NASDAQ"},
-        {"symbol": "PYPL", "name": "PayPal Holdings Inc.", "exchange": "NASDAQ"},
-        {"symbol": "ADBE", "name": "Adobe Inc.", "exchange": "NASDAQ"},
-        {"symbol": "NFLX", "name": "Netflix Inc.", "exchange": "NASDAQ"},
-        {"symbol": "AMD", "name": "Advanced Micro Devices", "exchange": "NASDAQ"},
-        {"symbol": "INTC", "name": "Intel Corporation", "exchange": "NASDAQ"},
-        {"symbol": "COST", "name": "Costco Wholesale Corp.", "exchange": "NASDAQ"},
-        {"symbol": "AVGO", "name": "Broadcom Inc.", "exchange": "NASDAQ"},
-        {"symbol": "PEP", "name": "PepsiCo Inc.", "exchange": "NASDAQ"},
-        {"symbol": "CMCSA", "name": "Comcast Corporation", "exchange": "NASDAQ"},
-        {"symbol": "TXN", "name": "Texas Instruments", "exchange": "NASDAQ"},
-        {"symbol": "AMAT", "name": "Applied Materials Inc.", "exchange": "NASDAQ"},
-        {"symbol": "MU", "name": "Micron Technology", "exchange": "NASDAQ"},
-        {"symbol": "CSCO", "name": "Cisco Systems Inc.", "exchange": "NASDAQ"},
-        {"symbol": "INTU", "name": "Intuit Inc.", "exchange": "NASDAQ"},
-        {"symbol": "ISRG", "name": "Intuitive Surgical", "exchange": "NASDAQ"},
-        {"symbol": "BKNG", "name": "Booking Holdings", "exchange": "NASDAQ"},
-        {"symbol": "MDLZ", "name": "Mondelez International", "exchange": "NASDAQ"},
-        {"symbol": "ATVI", "name": "Activision Blizzard", "exchange": "NASDAQ"},
-        {"symbol": "ADP", "name": "Automatic Data Processing", "exchange": "NASDAQ"},
-        {"symbol": "FISV", "name": "Fiserv Inc.", "exchange": "NASDAQ"},
-        {"symbol": "CPRT", "name": "Copart Inc.", "exchange": "NASDAQ"},
-        {"symbol": "KLAC", "name": "KLA Corporation", "exchange": "NASDAQ"},
-        
-        # NYSE
-        {"symbol": "BRK.B", "name": "Berkshire Hathaway", "exchange": "NYSE"},
-        {"symbol": "JPM", "name": "JPMorgan Chase & Co.", "exchange": "NYSE"},
-        {"symbol": "JNJ", "name": "Johnson & Johnson", "exchange": "NYSE"},
-        {"symbol": "V", "name": "Visa Inc.", "exchange": "NYSE"},
-        {"symbol": "PG", "name": "Procter & Gamble Co.", "exchange": "NYSE"},
-        {"symbol": "UNH", "name": "UnitedHealth Group", "exchange": "NYSE"},
-        {"symbol": "HD", "name": "Home Depot Inc.", "exchange": "NYSE"},
-        {"symbol": "MA", "name": "Mastercard Inc.", "exchange": "NYSE"},
-        {"symbol": "DIS", "name": "Walt Disney Co.", "exchange": "NYSE"},
-        {"symbol": "CRM", "name": "Salesforce Inc.", "exchange": "NYSE"},
-        {"symbol": "TMO", "name": "Thermo Fisher Scientific", "exchange": "NYSE"},
-        {"symbol": "ABBV", "name": "AbbVie Inc.", "exchange": "NYSE"},
-        {"symbol": "ACN", "name": "Accenture plc", "exchange": "NYSE"},
-        {"symbol": "ABT", "name": "Abbott Laboratories", "exchange": "NYSE"},
-        {"symbol": "NKE", "name": "Nike Inc.", "exchange": "NYSE"},
-        {"symbol": "MCD", "name": "McDonald's Corp.", "exchange": "NYSE"},
-        {"symbol": "WMT", "name": "Walmart Inc.", "exchange": "NYSE"},
-        {"symbol": "BA", "name": "Boeing Co.", "exchange": "NYSE"},
-        {"symbol": "CAT", "name": "Caterpillar Inc.", "exchange": "NYSE"},
-        {"symbol": "GS", "name": "Goldman Sachs Group", "exchange": "NYSE"},
-        {"symbol": "MMM", "name": "3M Company", "exchange": "NYSE"},
-        {"symbol": "IBM", "name": "IBM Corporation", "exchange": "NYSE"},
-        {"symbol": "GE", "name": "General Electric", "exchange": "NYSE"},
-        {"symbol": "F", "name": "Ford Motor Company", "exchange": "NYSE"},
-        {"symbol": "GM", "name": "General Motors", "exchange": "NYSE"},
-        {"symbol": "CIT", "name": "Citigroup Inc.", "exchange": "NYSE"},
-        {"symbol": "USB", "name": "US Bancorp", "exchange": "NYSE"},
-        {"symbol": "PNC", "name": "PNC Financial Services", "exchange": "NYSE"},
-        {"symbol": "T", "name": "AT&T Inc.", "exchange": "NYSE"},
-        {"symbol": "VZ", "name": "Verizon Communications", "exchange": "NYSE"},
-        
-        # AMEX
-        {"symbol": "SPY", "name": "SPDR S&P 500 ETF Trust", "exchange": "AMEX"},
-        {"symbol": "QQQ", "name": "Invesco QQQ Trust", "exchange": "AMEX"},
-        {"symbol": "IWM", "name": "iShares Russell 2000 ETF", "exchange": "AMEX"},
-        {"symbol": "DIA", "name": "SPDR Dow Jones Industrial", "exchange": "AMEX"},
-        {"symbol": "XLF", "name": "Financial Select Sector SPDR", "exchange": "AMEX"},
-        {"symbol": "XLK", "name": "Technology Select Sector SPDR", "exchange": "AMEX"},
-        {"symbol": "XLE", "name": "Energy Select Sector SPDR", "exchange": "AMEX"},
-        {"symbol": "XLV", "name": "Health Care Select Sector SPDR", "exchange": "AMEX"},
-        {"symbol": "ARGO", "name": "Argo Graphics", "exchange": "AMEX"},
-        {"symbol": "BCS", "name": "Barclays Bank", "exchange": "AMEX"},
+    # NSE Kenya searchable stocks
+    nse_search_stocks = [
+        {"symbol": "SCOM", "name": "Safaricom PLC", "exchange": "NSE"},
+        {"symbol": "NBK", "name": "NCBA Bank", "exchange": "NSE"},
+        {"symbol": "KCB", "name": "KCB Group", "exchange": "NSE"},
+        {"symbol": "EABL", "name": "East African Breweries", "exchange": "NSE"},
+        {"symbol": "BAT", "name": "BAT Kenya", "exchange": "NSE"},
+        {"symbol": "ABSA", "name": "ABSA Bank Kenya", "exchange": "NSE"},
+        {"symbol": "COOP", "name": "Co-operative Bank", "exchange": "NSE"},
+        {"symbol": "EQTY", "name": "Equity Group", "exchange": "NSE"},
+        {"symbol": "KLB", "name": "Kalanzi", "exchange": "NSE"},
+        {"symbol": "NSE20", "name": "NSE 20 Index", "exchange": "NSE"},
     ]
     
     query_lower = q.lower()

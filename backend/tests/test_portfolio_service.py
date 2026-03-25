@@ -57,13 +57,13 @@ class TestPortfolioService:
         # Create a mock position
         mock_position = Mock()
         mock_position.id = 1
-        mock_position.symbol = 'AAPL'
+        mock_position.symbol = 'SCOM'
         mock_position.side = 'long'
         mock_position.quantity = Decimal('100')
-        mock_position.avg_entry_price = Decimal('150.00')
-        mock_position.current_price = Decimal('155.00')
-        mock_position.total_cost = Decimal('15000')
-        mock_position.day_change = Decimal('100')
+        mock_position.avg_entry_price = Decimal('13.50')
+        mock_position.current_price = Decimal('14.00')
+        mock_position.total_cost = Decimal('1350')
+        mock_position.day_change = Decimal('10')
         mock_position.day_change_percent = Decimal('1.0')
         mock_position.opened_at = datetime(2024, 1, 1, 10, 0, 0)
         mock_position.updated_at = datetime(2024, 1, 15, 10, 0, 0)
@@ -73,22 +73,22 @@ class TestPortfolioService:
         result = portfolio_service.get_positions()
         
         assert len(result) == 1
-        assert result[0]['symbol'] == 'AAPL'
+        assert result[0]['symbol'] == 'SCOM'
         assert result[0]['side'] == 'long'
         assert result[0]['quantity'] == 100.0
-        assert result[0]['unrealized_pnl'] == 500.0  # (155 - 150) * 100
-        assert result[0]['unrealized_pnl_percent'] == pytest.approx(3.333, rel=0.01)
+        assert result[0]['unrealized_pnl'] == 50.0  # (14-13.5)*100
+        assert result[0]['unrealized_pnl_percent'] == pytest.approx(3.7, rel=0.01)
     
     def test_get_positions_short_position(self, portfolio_service, mock_db):
         """Test get_positions with a short position."""
         mock_position = Mock()
         mock_position.id = 1
-        mock_position.symbol = 'TSLA'
+        mock_position.symbol = 'KCB'
         mock_position.side = 'short'
         mock_position.quantity = Decimal('50')
-        mock_position.avg_entry_price = Decimal('200.00')
-        mock_position.current_price = Decimal('190.00')
-        mock_position.total_cost = Decimal('10000')
+        mock_position.avg_entry_price = Decimal('16.00')
+        mock_position.current_price = Decimal('15.00')
+        mock_position.total_cost = Decimal('800')
         mock_position.day_change = None
         mock_position.day_change_percent = None
         mock_position.opened_at = None
@@ -99,23 +99,23 @@ class TestPortfolioService:
         result = portfolio_service.get_positions()
         
         assert len(result) == 1
-        assert result[0]['symbol'] == 'TSLA'
+        assert result[0]['symbol'] == 'KCB'
         assert result[0]['side'] == 'short'
-        # Short position: (200 - 190) * 50 = 500 profit
-        assert result[0]['unrealized_pnl'] == 500.0
+        # Short: (16-15)*50 = 50 profit
+        assert result[0]['unrealized_pnl'] == 50.0
     
     def test_get_portfolio_summary(self, portfolio_service, mock_db):
         """Test get_portfolio_summary calculates totals correctly."""
         # Mock positions
         mock_pos1 = Mock()
         mock_pos1.id = 1
-        mock_pos1.symbol = 'AAPL'
+        mock_pos1.symbol = 'SCOM'
         mock_pos1.side = 'long'
         mock_pos1.quantity = Decimal('100')
-        mock_pos1.avg_entry_price = Decimal('150.00')
-        mock_pos1.current_price = Decimal('155.00')
-        mock_pos1.total_cost = Decimal('15000')
-        mock_pos1.day_change = Decimal('100')
+        mock_pos1.avg_entry_price = Decimal('13.50')
+        mock_pos1.current_price = Decimal('14.00')
+        mock_pos1.total_cost = Decimal('1350')
+        mock_pos1.day_change = Decimal('10')
         mock_pos1.day_change_percent = Decimal('1.0')
         mock_pos1.opened_at = None
         mock_pos1.updated_at = None
@@ -147,17 +147,17 @@ class TestPortfolioService:
         """Test update_position_price updates the database."""
         mock_position = Mock()
         mock_position.id = 1
-        mock_position.symbol = 'AAPL'
+        mock_position.symbol = 'SCOM'
         mock_position.side = 'long'
         mock_position.quantity = Decimal('100')
-        mock_position.avg_entry_price = Decimal('150.00')
-        mock_position.total_cost = Decimal('15000')
+        mock_position.avg_entry_price = Decimal('13.50')
+        mock_position.total_cost = Decimal('1350')
         
         mock_db.query.return_value.filter.return_value.all.return_value = [mock_position]
         
-        portfolio_service.update_position_price('AAPL', 160.00)
+        portfolio_service.update_position_price('SCOM', 14.50)
         
-        assert mock_position.current_price == Decimal('160.00')
+        assert mock_position.current_price == Decimal('14.50')
         mock_db.commit.assert_called_once()
     
     def test_update_position_price_short(self, portfolio_service, mock_db):
@@ -172,10 +172,10 @@ class TestPortfolioService:
         
         mock_db.query.return_value.filter.return_value.all.return_value = [mock_position]
         
-        portfolio_service.update_position_price('TSLA', 190.00)
+        portfolio_service.update_position_price('KCB', 14.50)
         
-        # Short position: price drop = profit
-        assert mock_position.current_price == Decimal('190.00')
+        # Short: update to new price
+        assert mock_position.current_price == Decimal('14.50')
         mock_db.commit.assert_called_once()
 
 
@@ -223,14 +223,14 @@ class TestPaperTradingService:
         # Mock no existing position
         mock_db.query.return_value.filter.return_value.first.return_value = None
         
-        result = paper_trading_service.execute_buy_order('AAPL', 10, 150.00)
+        result = paper_trading_service.execute_buy_order('SCOM', 10, 14.00)
         
         assert result['success'] is True
-        assert result['symbol'] == 'AAPL'
+        assert result['symbol'] == 'SCOM'
         assert result['side'] == 'buy'
         assert result['quantity'] == 10
-        assert result['price'] == 150.00
-        assert result['total_cost'] == 1500.0
+        assert result['price'] == 14.00
+        assert result['total_cost'] == 140.0
         mock_db.add.assert_called()
         mock_db.commit.assert_called()
     
@@ -239,7 +239,7 @@ class TestPaperTradingService:
         # Set low buying power
         paper_trading_service.account.buying_power = Decimal('100')
         
-        result = paper_trading_service.execute_buy_order('AAPL', 100, 150.00)
+        result = paper_trading_service.execute_buy_order('SCOM', 100, 14.00)
         
         assert result['success'] is False
         assert 'Insufficient buying power' in result['error']
@@ -256,7 +256,7 @@ class TestPaperTradingService:
         
         mock_db.query.return_value.filter.return_value.first.return_value = mock_existing_position
         
-        result = paper_trading_service.execute_buy_order('AAPL', 50, 160.00)
+        result = paper_trading_service.execute_buy_order('SCOM', 50, 14.50)
         
         assert result['success'] is True
         # New average: (100 * 150 + 50 * 160) / 150 = 153.33
@@ -272,7 +272,7 @@ class TestPaperTradingService:
         
         mock_db.query.return_value.filter.return_value.first.return_value = mock_position
         
-        result = paper_trading_service.execute_sell_order('AAPL', 50, 160.00)
+        result = paper_trading_service.execute_sell_order('SCOM', 50, 14.50)
         
         assert result['success'] is True
         assert result['side'] == 'sell'
@@ -287,7 +287,7 @@ class TestPaperTradingService:
         """Test sell order with no existing position."""
         mock_db.query.return_value.filter.return_value.first.return_value = None
         
-        result = paper_trading_service.execute_sell_order('AAPL', 10, 150.00)
+        result = paper_trading_service.execute_sell_order('SCOM', 10, 14.00)
         
         assert result['success'] is False
         assert 'No position found' in result['error']
@@ -299,7 +299,7 @@ class TestPaperTradingService:
         
         mock_db.query.return_value.filter.return_value.first.return_value = mock_position
         
-        result = paper_trading_service.execute_sell_order('AAPL', 100, 150.00)
+        result = paper_trading_service.execute_sell_order('SCOM', 100, 14.00)
         
         assert result['success'] is False
         assert 'Insufficient shares' in result['error']

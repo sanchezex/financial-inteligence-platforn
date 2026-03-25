@@ -13,6 +13,7 @@ from typing import AsyncGenerator, Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import aiohttp
 import ccxt.async_support as ccxt
+import yfinance as yf
 from polygon import RESTClient, WebSocketClient
 import oandapyV20
 from oandapyV20 import API
@@ -21,6 +22,10 @@ from oandapyV20.contrib.requests import MarketOrderRequest
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from .nse_symbols import NSE_SYMBOLS
+from app.core.config import settings
+from app.core.logging import get_logger
+logger = get_logger(__name__)
 
 logger = get_logger(__name__)
 
@@ -42,146 +47,82 @@ class MarketAPIService:
             connector=aiohttp.TCPConnector(limit=100, limit_per_host=20)
         )
         
-        # Polygon.io (Stocks/Commodities/Options)
-        if settings.POLYGON_API_KEY:
-            self.polygon_client = RESTClient(api_key=settings.POLYGON_API_KEY)
-            logger.info("Polygon client initialized")
-        
-        # OANDA Forex
-        if settings.OANDA_API_KEY and settings.OANDA_ACCOUNT_ID:
-            self.oanda_access_token = settings.OANDA_API_KEY
-            self.oanda_account_id = settings.OANDA_ACCOUNT_ID
-            self.oanda_api = API(access_token=self.oanda_access_token, 
-                               environment='practice' if settings.OANDA_ENV == 'practice' else 'live')
-            logger.info("OANDA client initialized")
-        
-        # Binance/CCXT (Crypto/Commodities Futures)
-        if settings.BINANCE_API_KEY:
-            self.binance_client = ccxt.binance({
-                'apiKey': settings.BINANCE_API_KEY,
-                'secret': settings.BINANCE_SECRET,
-                'sandbox': settings.BINANCE_SANDBOX or False,
-                'enableRateLimit': True,
-                'options': {'defaultType': 'future'}
-            })
-            await self.binance_client.load_markets()
-            logger.info("Binance client initialized")
-        
-        self._initialized = True
+        # NSE-ONLY: No other providers
+        logger.info("NSE MarketAPI initialized (Yahoo Finance .KN only)")
         
     async def close(self):
         '''Cleanup clients'''
-        if self.session:
-            await self.session.close()
-        if self.binance_client:
-            await self.binance_client.close()
-        logger.info("Market API service closed")
+        logger.info("NSE Market API service closed")
     
     # =========================================================================
     # QUOTES (Latest bid/ask/last)
     # =========================================================================
+    def validate_nse_symbol(self, symbol: str) -> bool:
+        '''Validate symbol is NSE Kenya stock'''
+        if symbol not in NSE_SYMBOLS:
+            logger.warning(f"Non-NSE symbol requested: {symbol}")
+            return False
+        return True
+    
     async def get_quote(self, symbol: str) -> Optional[Dict[str, Any]]:
-        '''Get latest quote for any symbol across providers'''
-        providers = []
+        '''Get NSE quote ONLY via Yahoo Finance (.KN tickers)'''
+        if not self.validate_nse_symbol(symbol):
+            return None
         
-        # Try Polygon first (stocks/commodities)
-        if self.polygon_client and symbol in ['AAPL', 'GC', 'CL']:  
-            try:
-                quote = self.polygon_client.get_last_quote(symbol)
-                providers.append({
-                    'provider': 'polygon',
-                    'bid': float(quote.bid),
-                    'ask': float(quote.ask),
-                    'last': float(quote.last),
-                    'size': quote.size,
-                    'timestamp': quote.participant_timestamp
-                })
-            except Exception as e:
-                logger.debug(f"Polygon quote {symbol} failed: {e}")
-        
-        # Forex → OANDA
-        if 'USD' in symbol and self.oanda_api:
-            try:
-                params = {'instruments': symbol.replace('/', '_')}
-                r = pricing_http.PricingInfo(self.oanda_account_id, params)
-                oanda_api.request(r)
-                price = r.response['prices'][0]
-                providers.append({
-                    'provider': 'oanda',
-                    'bid': float(price['bids'][0]['price']),
-                    'ask': float(price['asks'][0]['price']), 
-                    'last': (float(price['bids'][0]['price']) + float(price['asks'][0]['price'])) / 2,
-                    'timestamp': price['time']
-                })
-            except Exception as e:
-                logger.debug(f"OANDA quote {symbol} failed: {e}")
-        
-        # Crypto/Futures → Binance
-        if self.binance_client:
-            try:
-                ticker = await self.binance_client.fetch_ticker(symbol)
-                providers.append({
-                    'provider': 'binance', 
-                    'bid': float(ticker['bid']),
-                    'ask': float(ticker['ask']),
-                    'last': float(ticker['last']),
-                    'timestamp': ticker['timestamp']
-                })
-            except Exception as e:
-                logger.debug(f"Binance quote {symbol} failed: {e}")
-        
-        # Return best/most recent
-        if providers:
-            best = max(providers, key=lambda x: x['timestamp'])
-            return best
-        return None
+        try:
+            yahoo_ticker = f"{symbol}.KN"  # Kenyan NSE format
+            ticker = yf.Ticker(yahoo_ticker)
+            info = ticker.info or {}
+            hist = ticker.history(period="1d")
+            if hist.empty:
+                logger.debug(f"No data for {yahoo_ticker}")
+                return None
+            
+            last_price = float(hist['Close'].iloc[-1])
+            return {
+                'provider': 'yahoo_nse',
+                'symbol': symbol,
+                'bid': round(last_price * 0.999, 2),
+                'ask': round(last_price * 1.001, 2),
+                'last': round(last_price, 2),
+                'volume': int(info.get('volume', 0)),
+                'timestamp': datetime.now().timestamp() * 1000,
+                'currency': 'KES'
+            }
+        except Exception as e:
+            logger.debug(f"NSE quote {symbol} failed: {e}")
+            return None
+        # OLD CODE REMOVED - NSE-only handled above
     
     # =========================================================================
     # TICK STREAM (Realtime quotes)
     # =========================================================================  
     async def stream_ticks(self, symbols: List[str]) -> AsyncGenerator[Dict, None]:
+        '''NSE tick polling (yfinance no WS, poll every 5s) - yields for ClickHouse'''
+        validated = [s for s in symbols if self.validate_nse_symbol(s)]
+        if not validated:
+            logger.warning("No valid NSE symbols for streaming")
+            return
+        
+        while True:  # Infinite stream
+            for symbol in validated:
+                quote = await self.get_quote(symbol)
+                if quote:
+                    quote['type'] = 'tick'
+                    yield quote
+            await asyncio.sleep(5)  # Poll interval
         '''Realtime tick stream - yields dicts for ClickHouse insert'''
         # Polygon WebSocket for stocks/commodities  
-        if self.polygon_client and any(s in ['AAPL', 'GC'] for s in symbols):
+        # NSE streaming only via polling (no WS providers for NSE)
             async for message in self._polygon_stream(symbols):
                 yield message
                 
-        # OANDA streaming pricing
-        if self.oanda_api and any('/' in s for s in symbols):
-            async for message in self._oanda_stream(symbols):
-                yield message
-        
-        # Binance WebSocket
-        if self.binance_client:
-            async for message in self._binance_stream(symbols):
-                yield message
+        # NSE-only polling above - no other streams
     
-    async def _polygon_stream(self, symbols: List[str]):
-        '''Polygon WebSocket tick stream'''
-        ws = WebSocketClient(api_key=settings.POLYGON_API_KEY, market='stocks', 
-                           feed='realtime', symbols=symbols)
-        async with ws as stream:
-            async for message in stream:
-                tick = {
-                    'timestamp': datetime.fromtimestamp(message['endtimestamp'] / 1000),
-                    'symbol': message['sym'],
-                    'bid': message.get('b', 0),
-                    'ask': message.get('a', 0), 
-                    'volume': message.get('z', 0),
-                    'bid_size': message.get('S', 0),  # fixme
-                    'ask_size': message.get('s', 0)
-                }
-                yield tick
-    
-    async def _oanda_stream(self, symbols: List[str]):
-        '''OANDA pricing stream'''
-        # OANDA streaming implementation
-        pass  # TODO: implement streaming
-    
-    async def _binance_stream(self, symbols: List[str]):
-        '''Binance WebSocket ticker stream'''
-        # Multi-symbol WebSocket
-        pass  # TODO: implement
+    # DISABLED non-NSE streams
+    async def _polygon_stream(self, symbols): raise NotImplementedError("NSE only")
+    async def _oanda_stream(self, symbols): raise NotImplementedError("NSE only")
+    async def _binance_stream(self, symbols): raise NotImplementedError("NSE only")
     
     # =========================================================================
     # BARS (OHLCV)
@@ -189,6 +130,17 @@ class MarketAPIService:
     async def get_bars(self, symbol: str, timeframe: str = 'minute', 
                       from_ts: datetime = None, to_ts: datetime = None, 
                       limit: int = 1000) -> List[Dict]:
+        '''NSE OHLCV via yfinance'''
+        if not self.validate_nse_symbol(symbol):
+            return []
+        try:
+            yahoo_ticker = f"{symbol}.KN"
+            ticker = yf.Ticker(yahoo_ticker)
+            period_map = {'1d': '1d', '5d': '5d', '1mo': '1mo', '3mo': '3mo', '6mo': '6mo', '1y': '1y', '2y': '2y', '5y': '5y', '10y': '10y', 'ytd': 'ytd', 'max': 'max'}
+            hist = ticker.history(period=period_map.get(timeframe, '1mo'), interval=timeframe)
+            return hist.reset_index().to_dict('records')
+        except:
+            return []
         '''Get OHLCV bars'''
         if self.polygon_client:
             try:

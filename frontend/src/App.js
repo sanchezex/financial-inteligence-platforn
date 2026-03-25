@@ -147,7 +147,7 @@ const navItems = [
         return <StockCompare />;
 
       case 'options':
-        return <OptionsChain symbol="AAPL" />;
+        return <OptionsChain symbol="SCOM" />;
 
       case 'alerts':
         return <PriceAlerts />;
@@ -172,7 +172,7 @@ case 'anomaly':
       case 'stocks':
         return (
           <>
-            <AdvancedChart symbol="AAPL" />
+            <AdvancedChart symbol="SCOM" />
             <div style={{ marginTop: '24px' }}>
               <StockCompare />
             </div>

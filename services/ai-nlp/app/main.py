@@ -1,40 +1,38 @@
 """
-Financial Intelligence Platform - AI/NLP Service
-
-Service for AI-powered analysis including satellite-based forex trading signals.
+NSE AI Analysis Service - Real-time trading signals and anomaly detection for Nairobi Stock Exchange.
 """
 
 import random
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 import uvicorn
+from .nse_symbols import NSE_SYMBOLS
 
-app = FastAPI(title="AI/NLP Service", version="1.0.0")
+app = FastAPI(title="NSE AI Signals", version="2.0.0")
 
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "ai-nlp"}
+    return {"status": "healthy", "service": "nse-ai"}
 
 
-@app.get("/")
-async def root():
-    return {"service": "ai-nlp", "version": "1.0.0"}
+# Removed forex endpoints - NSE only
 
 
 # ============================================================================
 # Satellite-Based Forex Signal Generation Endpoints
 # ============================================================================
 
-@app.get("/satellite/forex-signals")
-async def get_satellite_forex_signals(
-    forex_pair: Optional[str] = Query(default=None, description="Filter by forex pair (e.g., EUR/USD)"),
-    source: Optional[str] = Query(default=None, description="Filter by satellite source"),
-    min_confidence: float = Query(default=60.0, ge=0, le=100, description="Minimum confidence threshold"),
-    limit: int = Query(default=20, ge=1, le=100, description="Number of signals to return")
-):
+@app.get("/nse/signals/{symbol}")
+async def get_nse_signals(symbol: str, limit: int = 10):
+    from .nse_signals import generate_nse_signals
+    try:
+        signals = generate_nse_signals(symbol, limit)
+        return {"signals": signals}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     """
     Get satellite-based forex trading signals.
     
@@ -215,70 +213,27 @@ async def get_satellite_forex_signals(
     }
 
 
-@app.get("/satellite/sources")
-async def get_satellite_sources():
-    """
-    Get available satellite data sources.
-    
-    Returns list of satellite data sources and their characteristics.
-    """
-    return {
-        "sources": [
-            {
-                "id": "port_activity",
-                "name": "Port Activity",
-                "description": "Satellite imagery of major global ports tracking vessel counts, container density, and port utilization",
-                "regions": ["Shanghai", "Singapore", "Rotterdam", "Los Angeles", "Hamburg", "Busan", "Hong Kong"],
-                "update_frequency": "15 minutes",
-                "historical_accuracy": 78,
-                "typical_lead_time": "15-45 minutes"
-            },
-            {
-                "id": "shipping_route",
-                "name": "Shipping Routes",
-                "description": "Tracking of major shipping lanes and freight activity across oceans",
-                "regions": ["South China Sea", "Mediterranean", "Atlantic", "Pacific", "Indian Ocean"],
-                "update_frequency": "30 minutes",
-                "historical_accuracy": 72,
-                "typical_lead_time": "20-60 minutes"
-            },
-            {
-                "id": "commodity_storage",
-                "name": "Commodity Storage",
-                "description": "Monitoring of petroleum, grain, and other commodity storage facilities",
-                "regions": ["Houston", "Rotterdam", "Singapore", "Fujairah", "Amsterdam"],
-                "update_frequency": "1 hour",
-                "historical_accuracy": 75,
-                "typical_lead_time": "30-90 minutes"
-            },
-            {
-                "id": "agricultural",
-                "name": "Agricultural Monitoring",
-                "description": "Crop condition and harvest activity monitoring for major agricultural regions",
-                "regions": ["US Midwest", "Brazil", "Argentina", "Ukraine", "Australia"],
-                "update_frequency": "Daily",
-                "historical_accuracy": 68,
-                "typical_lead_time": "1-4 hours"
-            },
-            {
-                "id": "industrial",
-                "name": "Industrial Activity",
-                "description": "Factory and industrial facility activity monitoring via night lights and satellite imagery",
-                "regions": ["China East Coast", "Germany", "US Gulf Coast", "Japan", "South Korea"],
-                "update_frequency": "Daily",
-                "historical_accuracy": 71,
-                "typical_lead_time": "1-3 hours"
-            }
-        ],
-        "generated_at": datetime.utcnow().isoformat() + "Z"
+@app.get("/nse/anomaly/{symbol}")
+async def nse_anomaly(symbol: str):
+    from .nse_signals import detect_volume_anomaly
+    try:
+        # Mock bars for demo
+        bars = [{"volume": random.randint(100000, 500000)} for _ in range(50)]
+        return detect_volume_anomaly(symbol, bars)
+    except:
+        return {"anomaly": False}
+
+
+@app.get("/nse/sectors")
+async def nse_sectors():
+    sectors = {
+        "Banking": ["NBK", "KCB", "ABSA", "COOP", "EQTY"],
+        "Telecom": ["SCOM"],
+        "Beverages": ["EABL"],
+        "Tobacco": ["BAT"],
+        "ETFs": ["GLD"]
     }
-
-
-@app.get("/satellite/correlate/{forex_pair}")
-async def correlate_satellite_to_forex(
-    forex_pair: str,
-    lookback_hours: int = Query(default=24, ge=1, le=168)
-):
+    return {"nse_sectors": sectors}
     """
     Get correlation analysis between satellite data and forex pair movements.
     

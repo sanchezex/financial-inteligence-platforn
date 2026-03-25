@@ -275,24 +275,20 @@ async def get_historical_data(
 @router.get("/summary", response_model=List[MarketSummary])
 async def get_market_summary():
     """
-    Get summary of major market indices.
-    
-    Returns current values and changes for major indices.
+    Get NSE Kenya indices summary.
     """
-    # Major US indices
+    # NSE Kenya indices
     indices = [
-        {"symbol": "SPX", "name": "S&P 500"},
-        {"symbol": "DJI", "name": "Dow Jones Industrial"},
-        {"symbol": "IXIC", "name": "NASDAQ Composite"},
-        {"symbol": "RUT", "name": "Russell 2000"},
+        {"symbol": "NSE20", "name": "NSE 20 Index"},
+        {"symbol": "NSI", "name": "NSE All Share Index"},
     ]
-    
-    import random
     
     summaries = []
     for index in indices:
-        value = 4000 + random.random() * 1000
-        change = (random.random() - 0.5) * 50
+        base_values = {'NSE20': 1850, 'NSI': 165}
+        value = base_values.get(index["symbol"], 1800)
+        value += (random.random() - 0.5) * 20
+        change = (random.random() - 0.5) * 10
         
         summaries.append(MarketSummary(
             symbol=index["symbol"],
@@ -300,9 +296,9 @@ async def get_market_summary():
             current_value=round(Decimal(str(value)), 2),
             change=round(Decimal(str(change)), 2),
             change_percent=round(change / value * 100, 2),
-            high=round(Decimal(str(value + abs(change) + random.random() * 10)), 2),
-            low=round(Decimal(str(value - abs(change) - random.random() * 10)), 2),
-            volume=int(random.random() * 1000000000),
+            high=round(Decimal(str(value + abs(change) + random.random() * 5)), 2),
+            low=round(Decimal(str(value - abs(change) - random.random() * 5)), 2),
+            volume=int(random.random() * 10000000),
             timestamp=datetime.utcnow()
         ))
     
@@ -312,55 +308,49 @@ async def get_market_summary():
 @router.get("/status", response_model=MarketStatus)
 async def get_market_status():
     """
-    Get current market status and trading hours.
-    
-    Returns information about market open/close status and upcoming events.
+    Get NSE Kenya market status.
     """
     from datetime import datetime, time
+    from zoneinfo import ZoneInfo
     
-    # Get current UTC time
-    now = datetime.utcnow()
+    # Nairobi time (EAT UTC+3)
+    nairobi_tz = ZoneInfo("Africa/Nairobi")
+    now = datetime.now(nairobi_tz)
     current_time = now.time()
     
-    # Simple US market hours (simplified - EST/EDT would need proper handling)
-    market_open = time(9, 30)
-    market_close = time(16, 0)
+    # NSE hours: 10:00 AM - 3:00 PM EAT Mon-Fri
+    market_open = time(10, 0)
+    market_close = time(15, 0)
     
-    if current_time >= market_open and current_time <= market_close:
+    weekday = now.weekday()
+    if weekday >= 5:  # Weekend
+        status = "closed"
+    elif current_time >= market_open and current_time <= market_close:
         status = "open"
-    elif current_time > time(4, 0) and current_time < market_open:
-        status = "pre-market"
-    elif current_time > market_close and current_time < time(20, 0):
-        status = "after-hours"
+    elif current_time < market_open:
+        status = "pre-open"
     else:
         status = "closed"
     
     return MarketStatus(
         market_status=status,
         trading_hours={
-            "US": {
-                "pre_market": {"start": "04:00", "end": "09:30"},
-                "regular": {"start": "09:30", "end": "16:00"},
-                "after_hours": {"start": "16:00", "end": "20:00"}
-            },
-            "Europe": {
-                "regular": {"start": "09:00", "end": "17:30"}
-            },
-            "Asia": {
-                "regular": {"start": "09:00", "end": "15:00"}
+            "NSE Kenya": {
+                "pre_open": {"start": "09:00", "end": "10:00"},
+                "regular": {"start": "10:00", "end": "15:00"}
             }
         },
         upcoming_events=[
             {
                 "type": "earnings",
-                "symbol": "AAPL",
+                "symbol": "SCOM",
                 "date": (now + timedelta(days=2)).isoformat(),
                 "importance": "high"
             },
             {
                 "type": "economic",
-                "event": "FOMC Minutes",
-                "date": (now + timedelta(days=3)).isoformat(),
+                "event": "CBK Rate Decision",
+                "date": (now + timedelta(days=5)).isoformat(),
                 "importance": "high"
             }
         ]
@@ -374,54 +364,44 @@ async def get_market_status():
 @router.get("/search")
 async def search_symbols(
     query: str = Query(..., min_length=1, max_length=100),
-    asset_type: Optional[str] = None,
     limit: int = Query(default=10, le=50)
 ):
     """
-    Search for symbols by name or ticker.
-    
-    Returns matching symbols and their details.
+    Search NSE symbols.
     """
-    # Mock search results
-    mock_results = [
-        {"symbol": "AAPL", "name": "Apple Inc.", "exchange": "NASDAQ", "asset_type": "stock"},
-        {"symbol": "AMZN", "name": "Amazon.com Inc.", "exchange": "NASDAQ", "asset_type": "stock"},
-        {"symbol": "MSFT", "name": "Microsoft Corporation", "exchange": "NASDAQ", "asset_type": "stock"},
-        {"symbol": "GOOGL", "name": "Alphabet Inc.", "exchange": "NASDAQ", "asset_type": "stock"},
-        {"symbol": "META", "name": "Meta Platforms Inc.", "exchange": "NASDAQ", "asset_type": "stock"},
+    nse_stocks = [
+        {"symbol": "SCOM", "name": "Safaricom PLC", "exchange": "NSE", "sector": "Telecom"},
+        {"symbol": "NBK", "name": "NCBA Bank", "exchange": "NSE", "sector": "Banking"},
+        {"symbol": "KCB", "name": "KCB Group", "exchange": "NSE", "sector": "Banking"},
+        {"symbol": "EABL", "name": "East African Breweries", "exchange": "NSE", "sector": "Beverages"},
+        {"symbol": "BAT", "name": "British American Tobacco", "exchange": "NSE", "sector": "Tobacco"},
+        {"symbol": "ABSA", "name": "ABSA Bank Kenya", "exchange": "NSE", "sector": "Banking"},
     ]
     
-    # Filter by query
     query_lower = query.lower()
     results = [
-        r for r in mock_results 
+        r for r in nse_stocks 
         if query_lower in r["symbol"].lower() or query_lower in r["name"].lower()
     ]
-    
-    # Filter by asset type if specified
-    if asset_type:
-        results = [r for r in results if r["asset_type"] == asset_type]
     
     return {
         "query": query,
         "results": results[:limit],
-        "total": len(results[:limit])
+        "total": len(results)
     }
 
 
 @router.get("/trending")
 async def get_trending_symbols(limit: int = Query(default=10, le=50)):
     """
-    Get trending symbols by volume and mentions.
-    
-    Returns symbols with unusual activity or social media attention.
+    Get NSE trending stocks.
     """
     trending = [
-        {"symbol": "NVDA", "name": "NVIDIA Corporation", "reason": "AI chip demand surge", "score": 95},
-        {"symbol": "TSLA", "name": "Tesla Inc.", "reason": "Earnings announcement", "score": 88},
-        {"symbol": "AMD", "name": "Advanced Micro Devices", "reason": "Market share gains", "score": 82},
-        {"symbol": "MSFT", "name": "Microsoft Corporation", "reason": "Cloud growth", "score": 78},
-        {"symbol": "META", "name": "Meta Platforms Inc.", "reason": "VR/AR investments", "score": 75},
+        {"symbol": "SCOM", "name": "Safaricom", "reason": "High volume", "score": 95},
+        {"symbol": "KCB", "name": "KCB Group", "reason": "Earnings beat", "score": 88},
+        {"symbol": "NBK", "name": "NCBA Bank", "reason": "Dividend announcement", "score": 82},
+        {"symbol": "EABL", "name": "East African Breweries", "reason": "Sector rotation", "score": 78},
+        {"symbol": "BAT", "name": "BAT Kenya", "reason": "Defensive play", "score": 75},
     ]
     
     return {

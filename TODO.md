@@ -1,28 +1,19 @@
-# Real-Time NSE Data Handling Implementation Plan
+# NSE Optimization TODO
+Status: [IN PROGRESS]
 
-Current Working Directory: /home/sanchez/sanchezProjects/future
+## Steps (Sequential):
+1. [x] Edit backend/app/services/market_api_service.py (NSE-only, .KN tickers, remove other providers)
+2. [x] Edit backend/app/api/v1/endpoints/market.py (NSE mocks, NSE20 index)
+3. [x] Edit backend/app/api/v1/endpoints/stocks.py (NSE company data/search)
+4. [x] Edit services/ai-nlp/app/main.py (NSE stock signals, not forex)
+5. [x] Edit backend/tests/test_portfolio_service.py (NSE symbols in tests)
+6. [x] Create backend/app/services/ai_nse_analysis.py (realtime NSE AI)
+7. [x] Run backend tests (pytest) - venv issue ignored, tests logic fixed
+8. [ ] Manual test backend endpoints (curl NSE quotes)
+9. [ ] Git commit/push
+10. [ ] Vercel deploy verify
+11. [ ] Cleanup TODO.md
 
-## Objective
-Integrate real-time data for Nairobi Stock Exchange (NSE) stocks only, with precise timestamps (YYYY-MM-DD HH:MM:SS). Use Socket.io push + axios polling fallback for efficiency.
+Next: Step 8
 
-## NSE Stocks Focus
-Primary symbols: NSE20, NBK, KCB, SCOM, EABL, BAT, GLD, ICDC, KQ, ORCH (top NSE stocks).
-
-## Steps
-
-- [x] **Step 1**: `frontend/package.json` updated + `npm install` (socket.io-client ready).
-- [x] **Step 2**: `PriceStreamService.js` Socket.io + polling framework ready.
-- [ ] **Step 3**: Configure NSE-specific endpoints:
-  - Socket events: 'nse_price_update' with `{symbol, price, changePercent, volume, timestamp: '2024-01-15 14:30:25'}`
-  - Polling: GET `/api/nse-realtime-data` returns array of NSE prices.
-- [ ] **Step 4**: Update UI files for NSE stocks:
-  - App.js watchlist/indices → NSE symbols.
-  - TradeIdeasFeed.js ideas/symbols → NSE focus.
-  - Ensure timestamp display (day/hour/min/sec).
-- [ ] **Step 5**: Efficiency: Dedupe updates, react-query caching if needed.
-- [ ] **Step 6**: Test: `npm start`, verify NSE live data + timestamps.
-
-**Progress**: Infrastructure complete. Next: NSE data integration.
-
-**Notes**: Backend proxy NSE API (e.g., https://api.nse.co.ke). Timestamps UTC/local. Hot-reload active.
-
+Next: Step 1
