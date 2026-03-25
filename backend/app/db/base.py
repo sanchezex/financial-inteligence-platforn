@@ -14,7 +14,7 @@ from sqlalchemy import (
     Index, Integer, Numeric, String, Text, JSON, BigInteger
 )
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 
 import uuid

@@ -1,0 +1,177 @@
+version: '3.8'
+
+name: financial-intel-realtime
+
+services:
+  # ============================================================================
+  # ClickHouse Time Series Database (Primary TSDB)
+  # ============================================================================
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: financial_intel_clickhouse
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native TCP
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./database/clickhouse-config/users.xml:/etc/clickhouse-server/users.xml:ro
+      - ./database/clickhouse-config/config.xml:/etc/clickhouse-server/config.xml:ro
+      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
+    environment:
+      CLICKHOUSE_DB: financial_intel
+      CLICKHOUSE_USER: intel_user
+      CLICKHOUSE_PASSWORD: SecurePass2024!
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - intel-network
+    depends_on:
+      - redis
+      - kafka
+
+  # ============================================================================
+  # ClickHouse Init Script Runner (applies 01-04 schemas)
+  # ============================================================================
+  clickhouse-init:
+    image: clickhouse/clickhouse-server:24.8
+    volumes:
+      - ./database/init-scripts:/queries:ro
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - intel-network
+    command: >
+      bash -c "
+        until clickhouse-client --host clickhouse --user intel_user --password SecurePass2024! --query 'SELECT 1'; do
+          echo 'Waiting for ClickHouse...';
+          sleep 5;
+        done;
+        echo 'Executing init scripts...';
+        clickhouse-client --host clickhouse --user intel_user --password SecurePass2024! --multiquery --queries-file=/queries/01-schema.sql;
+        clickhouse-client --host clickhouse --user intel_user --password SecurePass2024! --multiquery --queries-file=/queries/02-trade-schema.sql;
+        clickhouse-client --host clickhouse --user intel_user --password SecurePass2024! --multiquery --queries-file=/queries/03-satellite-forex-schema.sql;
+        clickhouse-client --host clickhouse --user intel_user --password SecurePass2024! --multiquery --queries-file=/queries/04-realtime-schema.sql;
+        echo 'All schemas applied successfully!';
+      "
+
+  # ============================================================================
+  # Grafana with ClickHouse Datasource (Realtime Dashboards)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: financial_intel_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=SecurePass2024!
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - intel-network
+    depends_on:
+      - clickhouse
+
+  # ============================================================================
+  # Redis (existing - caching/quotes)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: financial_intel_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - intel-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ============================================================================
+  # Kafka (existing - streaming backbone)
+  # ============================================================================
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: financial_intel_kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_NUM_PARTITIONS: 6  # forex/commodities/stocks/satellite
+    depends_on:
+      - zookeeper
+    networks:
+      - intel-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: financial_intel_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - intel-network
+
+  # ============================================================================
+  # MySQL (existing - user data/positions)
+  # ============================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: financial_intel_mysql  
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass2024
+      MYSQL_DATABASE: financial_intel
+      MYSQL_USER: intel_user
+      MYSQL_PASSWORD: SecurePass2024!
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - intel-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+volumes:
+  clickhouse_data:
+  grafana_data:
+  redis_data: 
+  mysql_data:
+
+networks:
+  intel-network:
+    driver: bridge
+
+
+

@@ -14,6 +14,13 @@ import os
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+# Patch the services module before importing portfolio_service to avoid import cascades
+import app.services
+app.services.redis_manager = Mock()
+app.services.kafka_manager = Mock()
+
+from app.services.portfolio_service import PortfolioService, PaperTradingService
+
 
 class TestPortfolioService:
     """Test cases for PortfolioService class."""

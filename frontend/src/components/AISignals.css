@@ -1,4 +1,3 @@
-
 .ai-signals {
   background: #0f1419;
   border-radius: 12px;
@@ -8,8 +7,8 @@
 
 .signals-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -26,9 +25,38 @@
   font-size: 14px;
 }
 
+/* Signal Type Toggle */
+.signal-type-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.type-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #233038;
+  background: transparent;
+  color: #8b98a5;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.type-btn.active {
+  background: #1d9bf0;
+  border-color: #1d9bf0;
+  color: #ffffff;
+}
+
 .signal-summary {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .summary-item {
@@ -51,6 +79,39 @@
 .summary-item.watch {
   background: rgba(59, 130, 246, 0.1);
   color: #3b82f6;
+}
+
+.summary-item.satellite {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+/* Satellite Banner */
+.satellite-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.satellite-icon {
+  font-size: 24px;
+}
+
+.satellite-text {
+  flex: 1;
+  font-size: 13px;
+  color: #e0e0e0;
+}
+
+.satellite-avg-lead {
+  font-size: 13px;
+  color: #8b5cf6;
+  white-space: nowrap;
 }
 
 .signal-filters {
@@ -114,6 +175,16 @@
   border-left: 3px solid #ef4444;
 }
 
+/* Satellite Signal Card Styling */
+.signal-card.satellite-signal {
+  border-left: 3px solid #8b5cf6;
+  background: rgba(139, 92, 246, 0.03);
+}
+
+.signal-card.satellite-signal:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
 .signal-header {
   display: flex;
   justify-content: space-between;
@@ -131,6 +202,13 @@
   font-size: 20px;
   font-weight: 700;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.source-badge {
+  font-size: 14px;
 }
 
 .signal-badge {
@@ -146,6 +224,18 @@
 .signal-badge.large {
   padding: 6px 14px;
   font-size: 13px;
+}
+
+/* Satellite badge in modal */
+.satellite-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+  margin-left: 12px;
 }
 
 .confidence-section {
@@ -199,6 +289,14 @@
 .price-targets {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Forex targets grid */
+.price-targets.forex-targets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .target-item {
@@ -219,12 +317,37 @@
   color: #ffffff;
 }
 
-.target-item .value.positive {
+.target-item .value.positive,
+.target-item .value.profit {
   color: #22c55e;
 }
 
-.target-item .value.negative {
+.target-item .value.negative,
+.target-item .value.loss {
   color: #ef4444;
+}
+
+/* Satellite Indicators */
+.satellite-indicators {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #233038;
+}
+
+.sat-indicator {
+  font-size: 12px;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sat-indicator.lead-time {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
 }
 
 .signal-footer {
@@ -239,6 +362,14 @@
 .timestamp {
   font-size: 12px;
   color: #8b98a5;
+}
+
+.satellite-source-tag {
+  font-size: 11px;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
 }
 
 .details-btn {
@@ -306,6 +437,8 @@
   margin: 0 0 8px;
   font-size: 28px;
   color: #ffffff;
+  display: flex;
+  align-items: center;
 }
 
 .modal-confidence {
@@ -325,13 +458,15 @@
 
 .analysis-section,
 .factors-section,
-.prediction-section {
+.prediction-section,
+.satellite-details {
   margin-bottom: 24px;
 }
 
 .analysis-section h3,
 .factors-section h3,
-.prediction-section h3 {
+.prediction-section h3,
+.satellite-details h3 {
   margin: 0 0 12px;
   font-size: 16px;
   font-weight: 600;
@@ -343,6 +478,95 @@
   color: #e0e0e0;
   line-height: 1.6;
   margin: 0;
+}
+
+/* Satellite Details Styling */
+.satellite-details {
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.sat-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sat-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sat-detail-item .label {
+  font-size: 11px;
+  color: #8b98a5;
+  text-transform: uppercase;
+}
+
+.sat-detail-item .value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.sat-detail-item .value.positive {
+  color: #22c55e;
+}
+
+.sat-detail-item .value.negative {
+  color: #ef4444;
+}
+
+.trade-levels {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.trade-levels h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.level-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.level-item .label {
+  font-size: 11px;
+  color: #8b98a5;
+  text-transform: uppercase;
+}
+
+.level-item .value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.level-item .value.profit {
+  color: #22c55e;
+}
+
+.level-item .value.loss {
+  color: #ef4444;
 }
 
 .factors-list {
@@ -444,6 +668,10 @@
     gap: 16px;
   }
 
+  .signal-type-toggle {
+    flex-wrap: wrap;
+  }
+
   .signals-grid {
     grid-template-columns: 1fr;
   }
@@ -459,6 +687,12 @@
 
   .confidence-bar.large {
     width: 100%;
+  }
+
+  .price-targets.forex-targets,
+  .sat-detail-grid,
+  .levels-grid {
+    grid-template-columns: 1fr;
   }
 }
 

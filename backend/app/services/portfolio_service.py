@@ -6,7 +6,7 @@ Business logic for portfolio management, position tracking, and performance calc
 
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -332,7 +332,7 @@ class PortfolioService:
                 if pos.total_cost > 0 else 0
             )
             
-            pos.updated_at = datetime.utcnow()
+            pos.updated_at = datetime.now(timezone.utc)
         
         self.db.commit()
     

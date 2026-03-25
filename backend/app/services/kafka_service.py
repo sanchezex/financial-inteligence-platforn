@@ -98,18 +98,31 @@ class KafkaManager:
         except Exception as e:
             logger.error(f"Error closing Kafka connections: {e}")
     
-    async def create_topics(self, topics: List[str], num_partitions: int = 3, replication_factor: int = 1) -> None:
+async def create_topics(self, topics: List[str], num_partitions: int = 6, replication_factor: int = 1) -> None:
         """
-        Create Kafka topics.
-        
-        Note: In production, use admin client. This is a simplified version.
+        Create Kafka topics for realtime trading.
         
         Args:
             topics: List of topic names to create
-            num_partitions: Number of partitions per topic
+            num_partitions: Number of partitions (6 for forex/commodities)
             replication_factor: Replication factor
         """
         from aiokafka.admin import AIOKafkaAdminClient, NewTopic
+        
+        # Realtime trading topics (high-throughput)
+        realtime_topics = topics + [
+            # Forex majors
+            'market.forex.eurusd', 'market.forex.gbpusd', 'market.forex.usdjpy',
+            'market.forex.audusd', 'market.forex.usdcad', 'market.forex.nzdusd',
+            # Commodities
+            'market.commodities.xauusd', 'market.commodities.xagusd', 
+            'market.commodities.cl', 'market.commodities.gc',
+            'market.commodities.si', 'market.commodities.ng',
+            # AI Signals
+            'ai.trading.signals', 'ai.risk.alerts',
+            # Order flow
+            'trading.orders', 'trading.executions'
+        ]
         
         try:
             admin = AIOKafkaAdminClient(
@@ -118,31 +131,18 @@ class KafkaManager:
             
             await admin.start()
             
-            # Create topic objects
-            new_topics = [
-                NewTopic(
-                    name=topic,
-                    num_partitions=num_partitions,
-                    replication_factor=replication_factor
-                )
-                for topic in topics
-            ]
+            new_topics = [NewTopic(name=t, num_partitions=num_partitions, replication_factor=replication_factor) 
+                         for t in realtime_topics]
             
-            # Create topics (ignore if already exist)
-            try:
-                await admin.create_topics(new_topics)
-                logger.info(f"Created topics: {topics}")
-            except Exception as e:
-                if 'TopicAlreadyExistsError' in str(e):
-                    logger.info(f"Topics already exist: {topics}")
-                else:
-                    raise e
+            await admin.create_topics(new_topics)
+            logger.info(f"Created realtime topics: {realtime_topics}")
             
             await admin.close()
             
         except Exception as e:
-            logger.error(f"Error creating topics {topics}: {e}")
-            raise
+            if 'TopicAlreadyExistsError' not in str(e):
+                logger.error(f"Error creating realtime topics: {e}")
+                raise
     
     async def delete_topics(self, topics: List[str]) -> None:
         """
