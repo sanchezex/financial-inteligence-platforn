@@ -1,32 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import './App.css';
 
-// Components
-import ShippingMap from './components/ShippingMap';
-import StockDetailModal from './components/StockDetailModal';
-import AuthModal from './components/AuthModal';
-import Portfolio from './components/Portfolio';
-import AdvancedChart from './components/AdvancedChart';
-import StockCompare from './components/StockCompare';
-import OptionsChain from './components/OptionsChain';
-import PriceAlerts from './components/PriceAlerts';
-import AISignals from './components/AISignals';
-import NaturalLanguageSearch from './components/NaturalLanguageSearch';
-import AnomalyDetection from './components/AnomalyDetection';
-import TradeIdeasFeed from './components/TradeIdeasFeed';
-import Markets from './components/Markets';
+// Lazy loaded components
+const ShippingMap = lazy(() => import('./components/ShippingMap'));
+const StockDetailModal = lazy(() => import('./components/StockDetailModal'));
+const AuthModal = lazy(() => import('./components/AuthModal'));
+const Portfolio = lazy(() => import('./components/Portfolio'));
+const AdvancedChart = lazy(() => import('./components/AdvancedChart'));
+const StockCompare = lazy(() => import('./components/StockCompare'));
+const OptionsChain = lazy(() => import('./components/OptionsChain'));
+const PriceAlerts = lazy(() => import('./components/PriceAlerts'));
+const AISignals = lazy(() => import('./components/AISignals'));
+const NaturalLanguageSearch = lazy(() => import('./components/NaturalLanguageSearch'));
+const AnomalyDetection = lazy(() => import('./components/AnomalyDetection'));
+const TradeIdeasFeed = lazy(() => import('./components/TradeIdeasFeed'));
+const Markets = lazy(() => import('./components/Markets'));
 
 // Context
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Services
-import PriceStreamService from './services/PriceStreamService';
+import PriceStreamService from './services/PriceStreamService'; 
 
 function AppContent() {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [watchlist, setWatchlist] = useState(['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'META', 'AMZN', 'TSLA', 'JPM']);
+  const [watchlist, setWatchlist] = useState([
+    'NSE20', 'NBK', 'KCB', 'SCOM', 'EABL', 'BAT', 'GLD', 'ICDC', 'KQ', 'ORCH'
+  ]); // Nairobi Stock Exchange stocks
   const [selectedStock, setSelectedStock] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login');
@@ -66,9 +68,9 @@ function AppContent() {
   }, []);
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-KE', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'KES'
     }).format(price);
   };
 
@@ -137,7 +139,9 @@ const navItems = [
             </div>
           );
         }
-        return <Portfolio isOpen={showPortfolio} onClose={() => setShowPortfolio(false)} />;
+        return <Suspense fallback={<div>Loading Portfolio...</div>}>
+          <Portfolio isOpen={showPortfolio} onClose={() => setShowPortfolio(false)} />
+        </Suspense>; 
 
       case 'compare':
         return <StockCompare />;
@@ -161,7 +165,9 @@ case 'anomaly':
         return <TradeIdeasFeed />;
 
       case 'markets':
-        return <Markets />;
+        return <Suspense fallback={<div>Loading Markets...</div>}>
+          <Markets />
+        </Suspense>; 
 
       case 'stocks':
         return (
@@ -181,10 +187,10 @@ case 'anomaly':
                 <h3>Major Indices</h3>
                 <div className="indices-grid">
                   {[
-                    { symbol: 'S&P 500', name: 'S&P 500', price: realtimePrices['S&P 500']?.price || 4783.45, change: realtimePrices['S&P 500']?.changePercent || 0.85 },
-                    { symbol: 'DJIA', name: 'Dow Jones', price: realtimePrices['DJIA']?.price || 37468.61, change: realtimePrices['DJIA']?.changePercent || 0.42 },
-                    { symbol: 'NASDAQ', name: 'NASDAQ', price: realtimePrices['NASDAQ']?.price || 15055.65, change: realtimePrices['NASDAQ']?.changePercent || 1.23 },
-                    { symbol: 'RUT', name: 'Russell 2000', price: realtimePrices['RUT']?.price || 2012.34, change: realtimePrices['RUT']?.changePercent || -0.56 },
+                    { symbol: 'NSE20', name: 'NSE 20 Index', price: realtimePrices['NSE20']?.price || 1850.2, change: realtimePrices['NSE20']?.changePercent || 0.45 },
+                    { symbol: 'NBK', name: 'NCBA Bank', price: realtimePrices['NBK']?.price || 32.5, change: realtimePrices['NBK']?.changePercent || -0.3 },
+                    { symbol: 'KCB', name: 'KCB Group', price: realtimePrices['KCB']?.price || 15.8, change: realtimePrices['KCB']?.changePercent || 1.2 },
+                    { symbol: 'SCOM', name: 'Safaricom', price: realtimePrices['SCOM']?.price || 13.2, change: realtimePrices['SCOM']?.changePercent || 0.8 },
                   ].map(index => (
                     <div
                       key={index.symbol}
@@ -356,7 +362,7 @@ case 'anomaly':
         <header className="header">
           <div className="header-left">
             <h1>{navItems.find(n => n.id === activeTab)?.label || activeTab}</h1>
-            <span className="header-subtitle">Real-time Market Intelligence</span>
+<span className="header-subtitle">NSE Real-time Intelligence (HH:MM:SS)</span>
           </div>
           <div className="header-right">
             <div className="search-bar" onClick={() => setActiveTab('search')} style={{ cursor: 'pointer' }}>
@@ -403,9 +409,14 @@ case 'anomaly':
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <Suspense fallback={<div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <div>Loading modules...</div>
+      </div>}>
+        <AppContent />
+      </Suspense>
     </AuthProvider>
-  );
+  ); 
 }
 
 export default App;

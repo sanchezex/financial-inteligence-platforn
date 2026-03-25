@@ -129,16 +129,16 @@ function TradeIdeasFeed() {
   const [showAlerts, setShowAlerts] = useState(false);
   const [realtimePrices, setRealtimePrices] = useState({});
   const [selectedSymbolForChart, setSelectedSymbolForChart] = useState(null);
-  const [compareSymbols, setCompareSymbols] = useState(['AAPL', 'MSFT', 'GOOGL', 'NVDA']);
+  const [compareSymbols, setCompareSymbols] = useState(['NBK', 'KCB', 'SCOM', 'EABL']);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
 const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewMode, setViewMode] = useState('cards');
   const [watchlists, setWatchlists] = useState([
-    { id: 1, name: 'Tech Giants', symbols: ['AAPL', 'MSFT', 'GOOGL', 'NVDA'] },
-    { id: 2, name: 'Dividend Kings', symbols: ['KO', 'JNGL', 'PG'] },
-    { id: 3, name: 'AI Stocks', symbols: ['NVDA', 'PLTR', 'AI'] },
+    { id: 1, name: 'NSE Banking', symbols: ['NBK', 'KCB'] },
+    { id: 2, name: 'NSE Blue Chips', symbols: ['SCOM', 'EABL'] },
+    { id: 3, name: 'NSE Top Gainers', symbols: ['BAT', 'GLD'] },
   ]);
   const [followedExperts, setFollowedExperts] = useState([1, 2]);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -837,12 +837,14 @@ const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
       {/* Real-time Prices Ticker */}
       <div className="realtime-ticker">
         {ideas.slice(0, 6).map(idea => {
-          const priceData = realtimePrices[idea.symbol] || {};
+        const priceData = realtimePrices[idea.symbol] || {};
           const change = priceData.changePercent || (Math.random() - 0.5) * 5;
+          const timestamp = priceData.timestamp ? new Date(priceData.timestamp).toLocaleTimeString('en-KE', {hour12: false}) : '';
           return (
             <div key={idea.symbol} className="ticker-item">
               <span className="ticker-symbol">{idea.symbol}</span>
-              <span className="ticker-price">${idea.currentPrice}</span>
+              <span className="ticker-price">KES {idea.currentPrice.toLocaleString()}</span>
+              <span className={`ticker-time small`}>{timestamp}</span>
               <span className={`ticker-change ${change >= 0 ? 'positive' : 'negative'}`}>
                 {change >= 0 ? '+' : ''}{change.toFixed(2)}%
               </span>

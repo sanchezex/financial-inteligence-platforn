@@ -1,93 +1,114 @@
+// Real-time price streaming service using Socket.io with axios polling fallback
+import io from 'socket.io-client';
+import axios from 'axios';
 
-// Real-time price streaming service using WebSocket
 class PriceStreamService {
   constructor() {
     this.subscribers = new Map();
     this.prices = new Map();
     this.isConnected = false;
-    this.updateInterval = null;
     this.ws = null;
+    this.pollInterval = null;
+this.baseUrl = process.env.REACT_APP_WS_URL || 'http://localhost:8000'; // Backend NSE proxy
   }
 
-  // Initialize connection (simulated for demo)
   connect() {
     if (this.isConnected) return;
 
-    // Simulate WebSocket connection
-    this.isConnected = true;
-    console.log('PriceStreamService: Connected');
+    // Try Socket.io connection first
+    try {
+      this.ws = io(this.baseUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        timeout: 20000
+      });
 
-    // Start simulated price updates
-    this.startSimulatedUpdates();
+      this.ws.on('connect', () => {
+        this.isConnected = true;
+        console.log('PriceStreamService: Socket.io Connected');
+        this.startSocketUpdates();
+      });
+
+      this.ws.on('disconnect', () => {
+        this.isConnected = false;
+        console.log('PriceStreamService: Socket.io Disconnected');
+        this.startPollingFallback();
+      });
+
+  this.ws.on('nse_price_update', (data) => {
+        // Ensure timestamp format: YYYY-MM-DD HH:MM:SS
+        if (data.timestamp) {
+          data.timestamp = new Date(data.timestamp).toISOString().slice(0, 19).replace('T', ' ');
+        }
+        this.updatePrice(data.symbol, data);
+      });
+
+      this.ws.on('connect_error', (error) => {
+        console.warn('Socket.io connect error, falling back to polling:', error);
+        this.startPollingFallback();
+      });
+
+    } catch (error) {
+      console.error('Socket.io init failed:', error);
+      this.startPollingFallback();
+    }
   }
 
   disconnect() {
     this.isConnected = false;
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
-      this.updateInterval = null;
+    if (this.ws) {
+      this.ws.disconnect();
+      this.ws = null;
+    }
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
     }
     console.log('PriceStreamService: Disconnected');
   }
 
-  // Simulate real-time price updates
-  startSimulatedUpdates() {
-    const symbols = ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'META', 'AMZN', 'TSLA', 'JPM', 'S&P 500', 'DJIA', 'NASDAQ'];
-
-    // Initialize prices
-    symbols.forEach(symbol => {
-      this.prices.set(symbol, {
-        symbol,
-        price: 100 + Math.random() * 400,
-        change: (Math.random() - 0.5) * 10,
-        changePercent: (Math.random() - 0.5) * 5,
-        volume: Math.floor(Math.random() * 10000000),
-        timestamp: Date.now()
-      });
-    });
-
-    // Update every 2 seconds
-    this.updateInterval = setInterval(() => {
-      symbols.forEach(symbol => {
-        const current = this.prices.get(symbol);
-        if (current) {
-          // Random walk price movement
-          const change = (Math.random() - 0.5) * 2;
-          const newPrice = Math.max(1, current.price + change);
-          const priceChange = newPrice - current.price;
-          const newChange = current.change + priceChange;
-          const newChangePercent = (newChange / (newPrice - newChange)) * 100;
-
-          const updated = {
-            ...current,
-            price: newPrice,
-            change: newChange,
-            changePercent: newChangePercent,
-            volume: current.volume + Math.floor(Math.random() * 10000),
-            timestamp: Date.now()
-          };
-
-          this.prices.set(symbol, updated);
-          this.notifySubscribers(symbol, updated);
-        }
-      });
-    }, 2000);
+  startSocketUpdates() {
+    // Request initial prices
+    if (this.ws) {
+    this.ws.emit('subscribe_nse_all');
+    }
   }
 
-  // Subscribe to price updates for a symbol
+  startPollingFallback() {
+    // Axios polling every 5 seconds as fallback (per task example)
+    this.pollInterval = setInterval(async () => {
+      try {
+      const response = await axios.get(`${this.baseUrl}/api/nse-realtime-data`, {
+          timeout: 5000
+        });
+        response.data.forEach(data => {
+          this.updatePrice(data.symbol, data);
+        });
+      } catch (error) {
+        console.warn('Polling failed:', error.message);
+      }
+    }, 5000);
+  }
+
+  updatePrice(symbol, data) {
+    this.prices.set(symbol, { ...data, symbol, timestamp: Date.now() });
+    this.notifySubscribers(symbol, this.prices.get(symbol));
+  }
+
+  // Subscribe to price updates for a symbol (backward compatible)
   subscribe(symbol, callback) {
     if (!this.subscribers.has(symbol)) {
       this.subscribers.set(symbol, new Set());
     }
     this.subscribers.get(symbol).add(callback);
 
-    // Immediately send current price if available
+    // Send current price immediately
     const currentPrice = this.prices.get(symbol);
     if (currentPrice) {
       callback(currentPrice);
     }
 
-    // Return unsubscribe function
     return () => {
       const symbolSubscribers = this.subscribers.get(symbol);
       if (symbolSubscribers) {
@@ -99,39 +120,32 @@ class PriceStreamService {
     };
   }
 
-  // Subscribe to all price updates
+  // Subscribe to all updates (backward compatible)
   subscribeAll(callback) {
     return this.subscribe('*ALL*', callback);
   }
 
-  // Notify subscribers of price update
   notifySubscribers(symbol, data) {
-    // Notify symbol-specific subscribers
     const symbolSubscribers = this.subscribers.get(symbol);
     if (symbolSubscribers) {
       symbolSubscribers.forEach(callback => callback(data));
     }
-
-    // Notify all-subscribers
     const allSubscribers = this.subscribers.get('*ALL*');
     if (allSubscribers) {
       allSubscribers.forEach(callback => callback(data));
     }
   }
 
-  // Get current price for symbol
   getPrice(symbol) {
     return this.prices.get(symbol) || null;
   }
 
-  // Get all prices
   getAllPrices() {
     return Object.fromEntries(this.prices);
   }
 }
 
-// Singleton instance
+// Singleton
 const priceStreamService = new PriceStreamService();
-
 export default priceStreamService;
 

@@ -1,29 +1,28 @@
-# Docker Installation & Containerization TODO
+# Real-Time NSE Data Handling Implementation Plan
 
-Status Legend:
-- [ ] TODO
-- [x] DONE  
-- [~] IN PROGRESS
+Current Working Directory: /home/sanchez/sanchezProjects/future
 
-## Docker Setup Steps
+## Objective
+Integrate real-time data for Nairobi Stock Exchange (NSE) stocks only, with precise timestamps (YYYY-MM-DD HH:MM:SS). Use Socket.io push + axios polling fallback for efficiency.
 
-[x] 1. Start Docker service
-[x] 2. Enable Docker on boot
-[x] 3. Add user to docker group  
-[x] 4. docker compose up -d (full stack)
-- Frontend: http://localhost:3000
-- API: http://localhost:8000/health
-- Grafana: http://localhost:3001
+## NSE Stocks Focus
+Primary symbols: NSE20, NBK, KCB, SCOM, EABL, BAT, GLD, ICDC, KQ, ORCH (top NSE stocks).
 
-[x] 5. Verify all services running
-[ ] 6. Test endpoints
-[ ] 7. Add to \"my docker containers\" (bookmark/access)
+## Steps
 
-## Commands Executed
-```
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker \$USER  # New login terminal/session required
-docker compose up -d
-```
+- [x] **Step 1**: `frontend/package.json` updated + `npm install` (socket.io-client ready).
+- [x] **Step 2**: `PriceStreamService.js` Socket.io + polling framework ready.
+- [ ] **Step 3**: Configure NSE-specific endpoints:
+  - Socket events: 'nse_price_update' with `{symbol, price, changePercent, volume, timestamp: '2024-01-15 14:30:25'}`
+  - Polling: GET `/api/nse-realtime-data` returns array of NSE prices.
+- [ ] **Step 4**: Update UI files for NSE stocks:
+  - App.js watchlist/indices → NSE symbols.
+  - TradeIdeasFeed.js ideas/symbols → NSE focus.
+  - Ensure timestamp display (day/hour/min/sec).
+- [ ] **Step 5**: Efficiency: Dedupe updates, react-query caching if needed.
+- [ ] **Step 6**: Test: `npm start`, verify NSE live data + timestamps.
+
+**Progress**: Infrastructure complete. Next: NSE data integration.
+
+**Notes**: Backend proxy NSE API (e.g., https://api.nse.co.ke). Timestamps UTC/local. Hot-reload active.
 
